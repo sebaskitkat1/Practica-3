@@ -34,7 +34,69 @@ namespace Calculadora.Formularios
             this.opfEditor.ShowDialog();
             if (File.Exists(opfEditor.FileName))
             {
-                rtbEditor.Text = File.ReadAllText(opfEditor.FileName);
+                path = opfEditor.FileName; 
+                rtbEditor.Text = File.ReadAllText(path);
+                saved = true;
+                buscarXml();
+            }
+        }
+
+        private void buscarXml()
+        {
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            string carpeta = Path.GetDirectoryName(path);
+            string rutaXml = Path.Combine(carpeta, "Caracteristicas.xml");
+
+            if (File.Exists(rutaXml))
+            {
+                try
+                {
+                    XElement xml = XElement.Load(rutaXml);
+                    string fuenteTexto = xml.Element("Fuente")?.Value;
+                    string color = xml.Element("Color")?.Value;
+                    string colorDeFondo = xml.Element("ColorDeFondo")?.Value;
+
+                    if (!string.IsNullOrEmpty(fuenteTexto))
+                    {
+                        string nombre = "Microsoft Sans Serif";
+                        float tamano = 12.0f;
+
+                        if (fuenteTexto.Contains("Name="))
+                        {
+                            int inicioNombre = fuenteTexto.IndexOf("Name=") + 5;
+                            int finNombre = fuenteTexto.IndexOf(",", inicioNombre);
+                            nombre = fuenteTexto.Substring(inicioNombre, finNombre - inicioNombre);
+                        }
+
+                        if (fuenteTexto.Contains("Size="))
+                        {
+                            int inicioSize = fuenteTexto.IndexOf("Size=") + 5;
+                            int finSize = fuenteTexto.IndexOf(",", inicioSize);
+                            string valorSize = fuenteTexto.Substring(inicioSize, finSize - inicioSize);
+                            tamano = float.Parse(valorSize);
+                        }
+
+                        rtbEditor.Font = new Font(nombre, tamano);
+                    }
+
+                    if (!string.IsNullOrEmpty(color))
+                    {
+                        int argbColor = int.Parse(color);
+                        rtbEditor.ForeColor = Color.FromArgb(argbColor);
+                    }
+
+                    if (!string.IsNullOrEmpty(colorDeFondo))
+                    {
+                        int argbColorDeFondo = int.Parse(colorDeFondo);
+                        rtbEditor.BackColor = Color.FromArgb(argbColorDeFondo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al cargar el archivo XML: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -61,7 +123,8 @@ namespace Calculadora.Formularios
             string rutaXml = Path.Combine(carpeta, "Caracteristicas.xml");
             XElement xml = new XElement("Caracteristicas");
             xml.Add(new XElement("Caracteristicas"),
-            new XElement("Fuente", rtbEditor.Font.ToString()),
+            new XElement("FuenteNombre", rtbEditor.Font.Name),
+            new XElement("FuenteTamaño", rtbEditor.Font.Size),
             new XElement("Color", rtbEditor.ForeColor.ToArgb().ToString()),
             new XElement("ColorDeFondo", rtbEditor.BackColor.ToArgb().ToString())
         );
